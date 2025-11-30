@@ -139,22 +139,97 @@ The outputs were:
 215961
 ```
 
+I will have the outputs printed in the 2 separate files under results/SRR14784363 or results/SRR14784377. I will use ">>" insteaf of ">" so that the outputs don't overwrite each other. I will also make the file readable so it's not just a bunch of unstructurized information:
+
 ```bash
-echo "File size:" >> results/run1_general_info.txt
-ls -lh data/SRR14784363.fastq  >> results/run1_general_info.txt
+echo "File size:" >> results/SRR14784363/r1_general_info.txt
+ls -lh  data/SRR14784363/SRR14784363.lite.1_1.fastq  >> results/SRR14784363/r1_general_info.txt
 
-echo "File size:" >> results/run2_general_info.txt
-ls -lh data/SRR14784377.fastq >> results/run2_general_info.txt
+echo "File size:" >> results/SRR14784363/r2_general_info.txt
+ls -lh  data/SRR14784363/SRR14784363.lite.1_2.fastq  >> results/SRR14784363/r2_general_info.txt
 
-echo "Total lines:" >> results/run1_general_info.txt
-wc -l data/SRR14784363.fastq >> results/run1_general_info.txt
+echo "File size:" >> results/SRR14784377/r1_general_info.txt
+ls -lh  data/SRR14784377/SRR14784377.lite.1_1.fastq  >> results/SRR14784377/r1_general_info.txt
 
-echo "Total lines:" >> results/run2_general_info.txt
-wc -l data/SRR14784377.fastq >> results/run2_general_info.txt
+echo "File size:" >> results/SRR14784377/r2_general_info.txt
+ls -lh  data/SRR14784377/SRR14784377.lite.1_2.fastq  >> results/SRR14784377/r2_general_info.txt
 
-echo "Reads (no headers):" >> results/run1_general_info.txt
-grep -v "^@" data/SRR14784363.fastq | wc -l >> results/run1_general_info.txt
+echo "Total lines:" >> results/SRR14784363/r1_general_info.txt
+wc -l data/SRR14784363/SRR14784363.lite.1_1.fastq  >> results/SRR14784363/r1_general_info.txt
 
-echo "Reads (no headers):" >> results/run2_general_info.txt
-grep -v "^@" data/SRR14784377.fastq | wc -l >> results/run2_general_info.txt
+echo "Total lines:" >> results/SRR14784363/r2_general_info.txt
+wc -l data/SRR14784363/SRR14784363.lite.1_2.fastq  >> results/SRR14784363/r2_general_info.txt
+
+echo "Total lines:" >> results/SRR14784377/r1_general_info.txt
+wc -l  data/SRR14784377/SRR14784377.lite.1_1.fastq  >> results/SRR14784377/r1_general_info.txt
+
+echo "Total lines:" >> results/SRR14784377/r2_general_info.txt
+wc -l  data/SRR14784377/SRR14784377.lite.1_2.fastq  >> results/SRR14784377/r2_general_info.txt
+
+echo "Reads(no headers):" >> results/SRR14784363/r1_general_info.txt
+grep -v "^@"  data/SRR14784363/SRR14784363.lite.1_1.fastq | wc -l  >> results/SRR14784363/r1_general_info.txt
+
+echo "Reads(no headers):" >> results/SRR14784363/r2_general_info.txt
+grep -v "^@"  data/SRR14784363/SRR14784363.lite.1_2.fastq | wc -l  >> results/SRR14784363/r2_general_info.txt
+
+echo "Reads(no headers):" >> results/SRR14784377/r1_general_info.txt
+grep -v "^@"  data/SRR14784377/SRR14784377.lite.1_1.fastq | wc -l >> results/SRR14784377/r1_general_info.txt
+
+echo "Reads(no headers):" >> results/SRR14784377/r2_general_info.txt
+grep -v "^@"  data/SRR14784377/SRR14784377.lite.1_2.fastq | wc -l >> results/SRR14784377/r2_general_info.txt
 ```
+
+6. Printing specific lines from the files
+
+I want to look at some specific examples of reads that my fastq files contain. I remember from GA3 that in order for this to happen, we need a script. I will create an .sh file under scripts/
+
+```bash
+touch scripts/lines.sh
+```
+
+The write a script that will show first and last reads (each read = 4 lines):
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+file="$1"
+
+echo "First read in $file:"
+head -n 4 "$file"
+
+echo ""
+echo "Last read in $file:"
+tail -n 4 "$file"
+```
+
+Then, I am going to run it for my fastq files:
+
+```bash
+bash scripts/lines.sh  data/SRR14784363/SRR14784363.lite.1_1.fastq  > results/SRR14784363/printed_lines_r1.txt
+bash scripts/lines.sh  data/SRR14784363/SRR14784363.lite.1_2.fastq  > results/SRR14784363/printed_lines_r2.txt
+bash scripts/lines.sh  data/SRR14784377/SRR14784377.lite.1_1.fastq  > results/SRR14784377/printed_lines_r1.txt
+bash scripts/lines.sh  data/SRR14784377/SRR14784377.lite.1_2.fastq  > results/SRR14784377/printed_lines_r2.txt
+```
+
+In the Project proposal, I involved Github Copilot (agent) here to answer what do the question marks we see in the output files mean.
+
+My prompt was: "# Explain simply and briefly what ???? mean under sequences reads"
+
+The answer: "Those question marks are the per‑base quality scores for each base in the read. In modern FASTQ (Phred+33) the character '?' (ASCII 63) encodes a Phred score of 30, which means the base call is high quality (≈0.1% error probability)."
+
+**Note**: Please let me know if adding screenshots of the promt and the answer is required. 
+
+This tells me that my reads are good quality. 
+
+7. Using Kraken in attempt to separate Bacteria from Archaea
+
+In the proposal, I mentioned that I might want to explore if I can tell which reads belong to Archaea and which to Bacteria. Menuka confirmed that `Kraken` can be used for this purpose. However, I am still not able to figure out how to install it. I tried using 'kraken2' command but it didn't work because I dont kraken installed. I can't figure out how to do it and will need help with this, if I am to include it in my final project.
+
+I then updated my GitHub repo:
+
+```bash
+git add scripts/*.sh progress_report.md
+git commit -m "Part B"
+```
+
