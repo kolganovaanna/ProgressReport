@@ -233,3 +233,252 @@ git add scripts/*.sh progress_report.md
 git commit -m "Part B"
 ```
 
+**Part C**
+
+8. Creating a TrimGalore script for slurm batch jobs
+
+As part of GA4, we looked at the html files produced after running a specific script. This is the ultimate goal of this step. 
+
+I made a project_trimgalore.sh file first:
+
+```bash
+touch scripts/project_trimgalore.sh
+```
+
+I then wrote a script based on the example script from GA4, which looked like this:
+
+```bash
+#!/bin/bash
+#SBATCH --account=PAS2880
+#SBATCH --cpus-per-task=8
+#SBATCH --time=00:30:00
+#SBATCH --output=slurm-fastqc-%j.out
+#SBATCH --mail-type=FAIL
+#SBATCH --error=slurm-fastqc-%j.err
+
+set -euo pipefail
+
+# Constants
+TRIMGALORE_CONTAINER=oras://community.wave.seqera.io/library/trim-galore:0.6.10--bc38c9238980c80e
+
+# Copy the placeholder variables
+R1="$1"
+R2="$2"
+outdir="$3"
+
+# Report
+echo "# Starting script trimgalore.sh"
+date
+echo "# Input R1 FASTQ file:      $R1"
+echo "# Input R2 FASTQ file:      $R2"
+echo "# Output dir:               $outdir"
+echo "# Cores to use: $SLURM_CPUS_PER_TASK"
+echo
+
+# Create the output dir
+mkdir -p "$outdir"
+
+# Run TrimGalore
+apptainer exec "$TRIMGALORE_CONTAINER" \
+    trim_galore \
+    --paired \
+    --fastqc \
+    --cores "$SLURM_CPUS_PER_TASK" \
+    --output_dir "$outdir" \
+    "$R1" \
+    "$R2"
+
+
+# Report
+echo
+echo "# TrimGalore version:"
+apptainer exec "$TRIMGALORE_CONTAINER" \
+  trim_galore -v
+echo "# Successfully finished script trimgalore.sh"
+date
+```
+I copied this script into my project_trimgalore.sh file.
+
+9. Submitting batch jobs to test the script
+
+I first used the following commands for run SRR14784363:
+
+```bash
+R1=data/SRR14784363/SRR14784363.lite.1_1.fastq
+R2=data/SRR14784363/SRR14784363.lite.1_2.fastq
+
+For check: ls -lh "$R1" "$R2"
+
+sbatch scripts/project_trimgalore.sh "$R1" "$R2" results/SRR14784363/batchjobs
+
+squeue -u $USER -l
+```
+
+The outputs were:
+
+```bash
+Submitted batch job 42178202
+
+Sun Nov 30 15:55:51 2025
+JOBID PARTITION     NAME     USER    STATE       TIME TIME_LIMI  NODES NODELIST(REASON)
+42178202       cpu project_ kolganov  RUNNING       0:05     30:00      1 p0040
+42178153       cpu ondemand kolganov  RUNNING      30:07   3:00:00      1 p0222
+```
+I had no FAIL email sent to me, and also the output files indicate that the script was run succcessfully.
+
+I did exactly the same for SRR14784377:
+
+```bash
+R1=data/SRR14784377/SRR14784377.lite.1_1.fastq
+R2=data/SRR14784377/SRR14784377.lite.1_2.fastq
+
+For check: ls -lh "$R1" "$R2"
+
+sbatch scripts/project_trimgalore.sh "$R1" "$R2" results/SRR14784377/batchjobs
+
+squeue -u $USER -l
+```
+
+The outputs were:
+
+```bash
+Submitted batch job 42178206
+Sun Nov 30 15:58:57 2025
+JOBID PARTITION     NAME     USER    STATE       TIME TIME_LIMI  NODES NODELIST(REASON)
+42178206       cpu project_ kolganov COMPLETI       0:12     30:00      1 p0040
+42178153       cpu ondemand kolganov  RUNNING      33:13   3:00:00      1 p0222
+```
+I received no FAIL emails and the output files indicated the script was completed successfully. 
+Now, we can look at produced html files.
+I downloaded the html files to assess reads summaries. I can see that it has a lot of overrespresented reads and they are likely not poly-G. We can also see that they used Illumina 1.9 for sequencing.
+
+10. Checking for poly-G and poly-A
+
+I still want to make sure we don't have a poly-G problem. I also want to know if there is a poly-A issue. I will refer back to my GA5 for this. In GA5, I asked GitHub Copilot (agent) to write me a script that would check for both poly-A and poly-G problems. I created a .sh files first (2 files for each data directory):
+
+```bash
+touch scripts/polyGA63.sh
+touch scripts/polyGA77.sh
+```
+
+I modified the script to fit this project progress report data. The script looks like this (this is an example for SRR14784363):
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+OUTDIR=results
+OUTFILE="$OUTDIR/SRR14784363/polyGA.txt"
+
+mkdir -p "$OUTDIR"
+printf "file\ttotal_reads\tpolyA_count\tpolyA_pct\tpolyG_count\tpolyG_pct\n" > "$OUTFILE"
+
+shopt -s nullglob
+for f in data/SR14784363/*.fastq; do
+  # count total reads and reads ending with >=10 A or >=10 G
+  readcounts=$(cat -- "$f" | awk 'NR%4==2{seq=toupper($0); total++; if(seq ~ /A{10,}$/) a++; if(seq ~ /G{10,}$/) g++} END{printf "%d\t%d\t%d\n", total, a+0, g+0}')
+  total=$(echo "$readcounts" | cut -f1)
+  a=$(echo "$readcounts" | cut -f2)
+  g=$(echo "$readcounts" | cut -f3)
+
+  if [ "$total" -eq 0 ]; then
+    apct="0.0000"
+    gpct="0.0000"
+  else
+    apct=$(awk -v a="$a" -v t="$total" 'BEGIN{printf "%.4f", (t?100*a/t:0)}')
+    gpct=$(awk -v g="$g" -v t="$total" 'BEGIN{printf "%.4f", (t?100*g/t:0)}')
+  fi
+
+  printf "%s\t%s\t%s\t%s\t%s\t%s\n" "$f" "$total" "$a" "$apct" "$g" "$gpct" >> "$OUTFILE"
+done
+
+echo "Wrote results to $OUTFILE"
+```
+I then ran the modified script to see what it will produce:
+
+```bash
+bash scripts/polyGA63.sh
+bash scripts/polyGA77.sh
+```
+Based on the results, we see that both poly-A and poly-G % are less than 1%. In GA5, I asked Co-Pilot at what level poly-A and poly-G are considered a problem. It said that anything above 1% is problematic. Therefore, in these specific reads we are not seeing any of these issues. However, overlapping sequences are still an issue. 
+
+10. Dealing with overlapping sequences 
+
+I can see there are a lot of overrepresented sequences in the html output files. They are detected in a lot of reads. I will look at the trimgalore --help again to see what options can work for fixing this. This is something I've not yet encountered, so please let me know if the option I select is wrong. 
+
+I think I should use this option:
+
+```bash
+--stringency <INT>      Overlap with adapter sequence required to trim a sequence. Defaults to a very stringent setting of 1, i.e. even a single bp of overlapping sequence will be trimmed off from the 3' end of any read.
+```
+The command should probably be '--stringency 1' because 1 is default. Let's try to incorporate this into the project_trimgalore.sh file. I will make a new script so it is more distinct. 
+
+```bash
+touch scripts/project_trimgalore_upd.sh
+```
+
+I copied the script from project_trimgalore.sh and added '--stringency 1'. Now, let's run it starting with SRR14784363:
+
+```bash
+R1=data/SRR14784363/SRR14784363.lite.1_1.fastq
+R2=data/SRR14784363/SRR14784363.lite.1_2.fastq
+
+For check: ls -lh "$R1" "$R2"
+
+sbatch scripts/project_trimgalore_upd.sh "$R1" "$R2" results/SRR14784363/batchjobs_upd63
+
+squeue -u $USER -l
+```
+
+The outputs were:
+
+```bash
+Submitted batch job 42178279
+
+Sun Nov 30 17:01:45 2025
+JOBID PARTITION     NAME     USER    STATE       TIME TIME_LIMI  NODES NODELIST(REASON)
+42178279       cpu project_ kolganov  RUNNING       0:00     30:00      1 p0002
+42178153       cpu ondemand kolganov  RUNNING    1:36:01   3:00:00      1 p0222
+```
+
+I then did the same for SRR14784377:
+
+```bash
+R1=data/SRR14784377/SRR14784377.lite.1_1.fastq
+R2=data/SRR14784377/SRR14784377.lite.1_2.fastq
+
+For check: ls -lh "$R1" "$R2"
+
+sbatch scripts/project_trimgalore_upd.sh "$R1" "$R2" results/SRR14784377/batchjobs_upd77
+
+squeue -u $USER -l
+```
+
+The outputs were:
+
+```bash
+Submitted batch job 42178281
+
+Sun Nov 30 17:03:22 2025
+JOBID PARTITION     NAME     USER    STATE       TIME TIME_LIMI  NODES NODELIST(REASON)
+42178281       cpu project_ kolganov  RUNNING       0:01     30:00      1 p0002
+42178153       cpu ondemand kolganov  RUNNING    1:37:38   3:00:00      1 p0222
+```
+I didn't get any fail emails. I also can see in the output files that the script was run successfully. 
+Now, let's see if anything changed in html files.
+Nothing really changes 
+
+**Note**: feedback on this part would be appreciated. I am not sure how else/should I at all deal with overlapping sequences here. 
+
+I will update my repo here:
+
+```bash
+git add scripts/*.sh progress_report.md
+git commit -m "Part C"
+```
+
+
+
+
+
+
