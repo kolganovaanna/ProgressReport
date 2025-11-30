@@ -56,7 +56,7 @@ touch progress_report.md
 mkdir data results scripts
 ```
 
-I went into this directory '/fs/ess/PAS2880/users/kolganovaanna/FinalProject/ProjectProposal/data_Menuka/' to copy the files with reads into 'ProgressReport/data/' directory, in which I also created 2 separate folders for the runs. For copying files, I used these commands:
+I went into this directory '/fs/ess/PAS2880/users/kolganovaanna/FinalProject/ProjectProposal/data_Menuka/' to copy the files with reads into 'ProgressReport/data/' directory, in which I also created 2 separate folders for the runs (I did the same for 'results/'). For copying files, I used these commands:
 
 ```bash
 cp SRR14784363.lite.1 \
@@ -82,4 +82,79 @@ echo "results/" > .gitignore
 echo "data/" >> .gitignore
 git add .gitignore
 git commit -m "Adding a Gitignore file"
+```
+
+5. General analysis of the reads
+
+First, I want to gather some general information about these files. I ran the following commands: 
+
+```bash
+ls -lh data/SRR14784363/SRR14784363.lite.1_1.fastq
+ls -lh data/SRR14784363/SRR14784363.lite.1_2.fastq
+ls -lh data/SRR14784377/SRR14784377.lite.1_1.fastq
+ls -lh data/SRR14784377/SRR14784377.lite.1_2.fastq
+```
+
+The outputs were:
+
+```bash
+-rw-rw----+ 1 kolganovaanna PAS2880 42M Nov 30 13:09 data/SRR14784363/SRR14784363.lite.1_1.fastq
+-rw-rw----+ 1 kolganovaanna PAS2880 42M Nov 30 13:09 data/SRR14784363/SRR14784363.lite.1_2.fastq
+
+-rw-rw----+ 1 kolganovaanna PAS2880 41M Nov 30 13:09 data/SRR14784377/SRR14784377.lite.1_1.fastq
+-rw-rw----+ 1 kolganovaanna PAS2880 41M Nov 30 13:09 data/SRR14784377/SRR14784377.lite.1_2.fastq
+```
+This tells us that the files are approximately the same size 
+
+
+I then counted the total number of lines and the number of gemonic features in the files using these commands:
+> results/
+```bash
+wc -l data/SRR14784363/SRR14784363.lite.1_1.fastq 
+wc -l data/SRR14784363/SRR14784363.lite.1_2.fastq
+
+grep -v "^@" data/SRR14784363/SRR14784363.lite.1_1.fastq | wc -l
+grep -v "^@" data/SRR14784363/SRR14784363.lite.1_2.fastq | wc -l
+
+wc -l data/SRR14784377/SRR14784377.lite.1_1.fastq 
+wc -l data/SRR14784377/SRR14784377.lite.1_2.fastq
+
+grep -v "^@" data/SRR14784377/SRR14784377.lite.1_1.fastq | wc -l
+grep -v "^@" data/SRR14784377/SRR14784377.lite.1_2.fastq | wc -l
+```
+
+The outputs were:
+
+```bash
+296916 data/SRR14784363/SRR14784363.lite.1_1.fastq
+296916 data/SRR14784363/SRR14784363.lite.1_2.fastq
+
+222687
+222687
+
+287948 data/SRR14784377/SRR14784377.lite.1_1.fastq
+287948 data/SRR14784377/SRR14784377.lite.1_2.fastq
+
+215961
+215961
+```
+
+```bash
+echo "File size:" >> results/run1_general_info.txt
+ls -lh data/SRR14784363.fastq  >> results/run1_general_info.txt
+
+echo "File size:" >> results/run2_general_info.txt
+ls -lh data/SRR14784377.fastq >> results/run2_general_info.txt
+
+echo "Total lines:" >> results/run1_general_info.txt
+wc -l data/SRR14784363.fastq >> results/run1_general_info.txt
+
+echo "Total lines:" >> results/run2_general_info.txt
+wc -l data/SRR14784377.fastq >> results/run2_general_info.txt
+
+echo "Reads (no headers):" >> results/run1_general_info.txt
+grep -v "^@" data/SRR14784363.fastq | wc -l >> results/run1_general_info.txt
+
+echo "Reads (no headers):" >> results/run2_general_info.txt
+grep -v "^@" data/SRR14784377.fastq | wc -l >> results/run2_general_info.txt
 ```
