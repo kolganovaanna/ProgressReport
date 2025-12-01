@@ -108,7 +108,7 @@ This tells us that the files are approximately the same size
 
 
 I then counted the total number of lines and the number of gemonic features in the files using these commands:
-> results/
+
 ```bash
 wc -l data/SRR14784363/SRR14784363.lite.1_1.fastq 
 wc -l data/SRR14784363/SRR14784363.lite.1_2.fastq
@@ -409,7 +409,7 @@ I can see there are a lot of overrepresented sequences in the html output files.
 I think I should use this option:
 
 ```bash
---stringency <INT>      Overlap with adapter sequence required to trim a sequence. Defaults to a very stringent setting of 1, i.e. even a single bp of overlapping sequence will be trimmed off from the 3' end of any read.
+--stringency <INT>      Overlap with adapter sequence required to trim a sequence. Defaults to a very stringent setting of 1, i.e. even a single bp of overlapping sequence will be trimmed off from the 3 end of any read.
 ```
 The command should probably be '--stringency 1' because 1 is default. Let's try to incorporate this into the project_trimgalore.sh file. I will make a new script so it is more distinct. 
 
@@ -476,6 +476,43 @@ I will update my repo here:
 git add scripts/*.sh progress_report.md
 git commit -m "Part C"
 ```
+
+**Part D**
+
+This part is dedicated to using R. I tried to use `DADA2` for taxonomic classification and
+alpha and beta diversity, as Menuka suggested. However, as I was trying to figure out my code (I used this link to help me with dada2, because I never used it before: [dada2 guide](https://benjjneb.github.io/dada2/tutorial.html)), it became pretty obvious that I'm moving nowhere. My R keeps producing errors, which indicate that my sample sizes are too small for dada2. You can find some of my attempted code chunks in R_DADA2.qmd file. The 'leranErrors" command is the one I tried modofying multiple times, I then also tried to avoid error rates, but even 'dada' command wouldn't work. 
+
+I will probably just do soemthing else in R. I might leave the dada2 Quarto file just as an example of what I've tried to do but couldn't accomplish. 
+
+Instead, I made graphs and exported them in pdf files. Please see R_FinalProject.qmd file. 
+
+With that, the goals of my final project have changed to these:
+
+1. To gather general information about the files using basic Bash commands
+2. To assess the quality of reads and determine possible issues 
+3. To address the possible issues (all about  overrepresented sequences). 
+4. To graph GC content distribution and base composition by cycle in R
+
+**My to-do list includes these steps**:
+
+1. Elaborate on commands used in R
+2. Figure out how to correctly (if at all) present `dada2` code
+3. Figure out `kraken2` and decide whether this will be useful
+4. Determine if there are other options I could use to deal with overlapping sequences
+
+I am going to commit to repo and push it here:
+
+```bash
+git add progress_report.md
+git add "SRR14784363.lite.1_1.fastq_QC_simple.pdf" "SRR14784363.lite.1_2.fastq_QC_simple.pdf" "SRR14784377.lite.1_1.fastq_QC_simple.pdf" "SRR14784377.lite.1_1.fastq_QC_simple.pdf"
+git commit -m "final commit"
+git branch -M main
+git remote add origin git@github.com:kolganovaanna/ProgressReport.git
+git push -u origin main
+```
+
+
+
 
 
 
