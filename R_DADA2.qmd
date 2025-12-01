@@ -1,0 +1,86 @@
+---
+title: "FinalProject_DADA2.qmd"
+author: "Anna Kolganova"
+ormat: html
+theme: cosmo 
+editor: visual
+date: "2025-11-30"
+---
+
+## Code
+
+I want my fastq files to be analyzed for for taxonomic classification and
+
+alpha and beta diversity. Menuka recommended I use 'DADA2' package for this. I will first start with installing it:
+
+```{r}
+BiocManager::install("dada2")
+
+path1 <- "data/SRR14784363"
+path2 <- "data/SRR14784377"
+
+list.files(path1)
+list.files(path2)
+```
+
+fnFs1 \<- sort(list.files(path1, pattern="\_1.fastq\$", full.names=TRUE))
+
+fnRs1 \<- sort(list.files(path1, pattern="\_2.fastq\$", full.names=TRUE))
+
+fnFs2 \<- sort(list.files(path2, pattern="\_1.fastq\$", full.names=TRUE))
+
+fnRs2 \<- sort(list.files(path2, pattern="\_2.fastq\$", full.names=TRUE))
+
+fnFs \<- c(fnFs1, fnFs2)
+
+fnRs \<- c(fnRs1, fnRs2)
+
+filtFs \<- file.path("data/filtered", basename(fnFs))
+
+filtRs \<- file.path("data/filtered", basename(fnRs))
+
+errF \<- learnErrors(filtFs, multithread=TRUE)
+
+Output: \> errF \<- learnErrors(filtFs, multithread=TRUE)
+
+32106140 total bases in 145937 reads from 2 samples will be used for learning the error rates.
+
+Error rates could not be estimated (this is usually because of very few reads).
+
+Error in getErrors(err, enforce = TRUE) : Error matrix is NULL.
+
+errR \<- learnErrors(filtRs, multithread=TRUE)
+
+Same error here
+
+If forcing for fewer reads:
+
+errF \<- learnErrors(filtFs, nbases=1e8, multithread=TRUE, errorEstimationFunction=loessErrfun)
+
+Output:
+
+```         
+> errF <- learnErrors(filtFs, nbases=1e8, multithread=TRUE, errorEstimationFunction=loessErrfun)
+32106140 total bases in 145937 reads from 2 samples will be used for learning the error rates.
+Error rates could not be estimated (this is usually because of very few reads).
+Error in getErrors(err, enforce = TRUE) : Error matrix is NULL.
+```
+
+errR \<- learnErrors(filtRs, nbases=1e8, multithread=TRUE, errorEstimationFunction=loessErrfun)
+
+errF \<- NULL
+
+errR \<- NULL
+
+dadaFs \<- dada(filtFs, err=errF, multithread=TRUE, pool="pseudo", selfConsist=TRUE)
+
+Output:
+
+```         
+> dadaFs <- dada(filtFs, err=errF, multithread=TRUE, pool="pseudo", selfConsist=TRUE)
+Initializing error rates to maximum possible estimate.
+Error rates could not be estimated (this is usually because of very few reads).
+Error in getErrors(err, enforce = TRUE) : Error matrix is NULL.
+```
+
+dadaRs \<- dada(filtRs, err=errR, multithread=TRUE, pool="pseudo", selfConsist=TRUE)

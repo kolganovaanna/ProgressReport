@@ -1,0 +1,68 @@
+---
+title: "R_FinalProject.qmd"
+author: "Anna Kolganova"
+format: html
+theme: cosmo 
+editor: visual
+date: "2025-11-30"
+---
+
+## Code
+
+```{r}
+fastq_files <- c(
+  "data/SRR14784377/SRR14784377.lite.1_1.fastq",
+  "data/SRR14784377/SRR14784377.lite.1_2.fastq",
+  "data/SRR14784363/SRR14784363.lite.1_1.fastq",
+  "data/SRR14784363/SRR14784363.lite.1_2.fastq"
+)
+```
+
+I want to create a loop that will make a separate pdf file for each fastq file. In the pdf, i want 2 graphs to be depicted: GC content distribution and base composition by cycle (A, T, etc.)
+
+```{r}
+
+for (f in fastq_files) {
+
+    message("Processing: ", f)
+
+    fq <- readFastq(f)
+    seqs <- sread(fq)
+
+    # GC content per read
+    gc <- letterFrequency(seqs, letters = "GC", as.prob = TRUE)
+
+    # Base composition by cycle
+    abc <- alphabetByCycle(seqs)
+
+    # Output file
+    pdf_file <- paste0(basename(f), "_QC_simple.pdf")
+    pdf(pdf_file, width = 10, height = 6)
+
+    par(mfrow=c(1,2))
+
+    # 1. GC content distribution
+    hist(gc, breaks=40, col="skyblue",
+         main="GC Content Distribution",
+         xlab="GC fraction", ylab="Count")
+
+    # 2. Base composition per cycle
+    matplot(
+      t(abc),
+      type="l", lty=1,
+      main="Base Composition by Cycle",
+      xlab="Cycle", ylab="Proportion"
+    )
+    legend(
+      "topright",
+      legend=c("A","C","G","T","N"),
+      col=1:5, lty=1, cex=0.8
+    )
+
+    dev.off()
+
+    message("Saved: ", pdf_file, "\n")
+}
+```
+
+GC content distribution appears to be normal.

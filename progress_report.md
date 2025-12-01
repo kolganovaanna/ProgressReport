@@ -503,7 +503,7 @@ With that, the goals of my final project have changed to these:
 I am going to commit to repo and push it here:
 
 ```bash
-git add progress_report.md
+git add progress_report.md R_DADA2.qmd R_FinalProject.qmd
 git add "SRR14784363.lite.1_1.fastq_QC_simple.pdf" "SRR14784363.lite.1_2.fastq_QC_simple.pdf" "SRR14784377.lite.1_1.fastq_QC_simple.pdf" "SRR14784377.lite.1_1.fastq_QC_simple.pdf"
 git commit -m "final commit"
 git branch -M main
